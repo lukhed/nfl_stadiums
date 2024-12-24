@@ -37,11 +37,13 @@ class NFLStadiums:
         self._parsed_soup_file = osC.append_to_dir(self._resources_dir, "parsedSoup.json")
         self._check_create_project_structure()
 
-        # Used to find stadium table from HTML. Change this if wiki structure changes.
-        self._current_stadiums_wiki_section_name = 'List_of_current_stadiums'
-        self._current_stadiums_table_from_heading = 2
-        self._additional_stadiums_wiki_section_name = 'Additional_stadiums'
-        self._additional_stadiums_table_from_heading = 1
+        # Used to find stadium table from HTML. Change wiki_section_names.json if this changes.
+        wiki_cal = fC.load_json_from_file(osC.create_file_path_string(['nfl_stadiums', 'custom_libs', 
+                                                                       'wiki_section_names.json']))
+        self._current_stadiums_wiki_section_name = wiki_cal['currentStadiumsTitle'].replace(" ", "_").capitalize()
+        self._current_stadiums_table_from_heading = wiki_cal['currentStadiumsNumFromHeading']
+        self._additional_stadiums_wiki_section_name = wiki_cal['additionalStadiumsTitle'].replace(" ", "_").capitalize()
+        self._additional_stadiums_table_from_heading = wiki_cal['additionalStadiumsNumFromHeading']
 
 
         # Used for team lookups
@@ -549,15 +551,11 @@ class NFLStadiums:
 
 def main():
     # Test code
-    nfl_stadiums = NFLStadiums(use_cache=True)
-    # jags_coords = nfl_stadiums.get_stadium_coordinates_by_team('jaguars')
-    # acrisure_stadium = nfl_stadiums.get_stadium_by_name('Acrisure stadium')
+    nfl_stadiums = NFLStadiums(use_cache=False)
+    special_stadium = nfl_stadiums.get_stadium_by_name("Allianz Arena")
+    print(f'\nSpechial Stadium Test:{special_stadium}')
     pit_weather = nfl_stadiums.get_weather_forecast_for_stadium('pit', "2024-09-08",
                                                                 hour_start=13, hour_end=16)
-    # ford_field_to_arrow_head = nfl_stadiums.calculate_distance_between_stadiums('lions', 'chiefs')
-    # stadium_names = nfl_stadiums.get_list_of_stadium_names()
-    # lions_stadiums = nfl_stadiums.get_stadium_by_team('detroit lions')
-    stop = 1
 
 if __name__ == '__main__':
     main()
