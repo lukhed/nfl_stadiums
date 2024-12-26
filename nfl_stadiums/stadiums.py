@@ -3,7 +3,6 @@ from lukhed_basic_utils import osCommon as osC
 from lukhed_basic_utils import fileCommon as fC
 from lukhed_basic_utils import timeCommon as tC
 from custom_libs.teamLists import city_short, alt_city_short, long, mascots, mascots_short
-from datetime import datetime, timedelta
 import urllib.parse
 import math
 
@@ -503,12 +502,13 @@ class NFLStadiums:
         lat = coords['lat']
         lon = coords['lon']
 
+        
         start_datetime_str = f"{day} {hour_start}:00:00"
         end_datetime_str = f"{day} {hour_end}:00:00"
-        start_datetime_obj = datetime.strptime(start_datetime_str, f"{day_format} %H:%M:%S")
-        end_datetime_obj = datetime.strptime(end_datetime_str, f"{day_format} %H:%M:%S")
-        start_date = start_datetime_obj.strftime("%Y-%m-%dT%H:00:00Z")
-        end_date = end_datetime_obj.strftime("%Y-%m-%dT%H:00:00Z")
+        start_datetime_obj = tC.convert_string_to_datetime(start_datetime_str, f"{day_format} %H:%M:%S")
+        end_datetime_obj = tC.convert_string_to_datetime(end_datetime_str, f"{day_format} %H:%M:%S")
+        start_date = tC.convert_date_to_string(start_datetime_obj, "%Y-%m-%dT%H:00:00Z")
+        end_date = tC.convert_date_to_string(end_datetime_obj, "%Y-%m-%dT%H:00:00Z")
 
         params = {
             'latitude': lat,
@@ -532,7 +532,7 @@ class NFLStadiums:
             indices = []
             re_structure = False
             for i, t in enumerate(weather_data['hourly']['time']):
-                tc = datetime.strptime(t, '%Y-%m-%dT%H:%M')
+                tc = tC.convert_string_to_datetime(t, '%Y-%m-%dT%H:%M')
                 if start_datetime_obj <= tc <= end_datetime_obj:
                     indices.append(i)
                 else:
@@ -550,12 +550,16 @@ class NFLStadiums:
 
 
 def main():
-    # Test code
-    nfl_stadiums = NFLStadiums(use_cache=False)
+    # Sanity Check Code
+    nfl_stadiums = NFLStadiums(use_cache=True)
     special_stadium = nfl_stadiums.get_stadium_by_name("Allianz Arena")
-    print(f'\nSpechial Stadium Test:{special_stadium}')
-    pit_weather = nfl_stadiums.get_weather_forecast_for_stadium('pit', "2024-09-08",
+    print(f'\nSpechial Stadium Test:{special_stadium}\n')
+
+    today = tC.create_timestamp("%Y-%m-%d")
+    pit_weather = nfl_stadiums.get_weather_forecast_for_stadium('pit', today,
                                                                 hour_start=13, hour_end=16)
+    print(f'\nWeather Test:{pit_weather}\n')
+    
 
 if __name__ == '__main__':
     main()
