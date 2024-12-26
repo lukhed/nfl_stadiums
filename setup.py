@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="nfl_stadiums",
-    version="1.0.0",
+    version="1.0.1",
     description="A simple python package that provides easy access to NFL stadium data",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
@@ -17,6 +17,6 @@ setup(
         "Operating System :: OS Independent",
     ],
     install_requires=[
-        "lukhed-basic-utils>=0.3.0"
+        "lukhed-basic-utils>=0.4.0"
     ],
 )
