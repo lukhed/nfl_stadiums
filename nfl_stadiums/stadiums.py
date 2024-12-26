@@ -3,6 +3,7 @@ from lukhed_basic_utils import osCommon as osC
 from lukhed_basic_utils import fileCommon as fC
 from lukhed_basic_utils import timeCommon as tC
 from custom_libs.teamLists import city_short, alt_city_short, long, mascots, mascots_short
+from custom_libs.wikipediaCal import scrape_cal
 import urllib.parse
 import math
 
@@ -37,12 +38,10 @@ class NFLStadiums:
         self._check_create_project_structure()
 
         # Used to find stadium table from HTML. Change wiki_section_names.json if this changes.
-        wiki_cal = fC.load_json_from_file(osC.create_file_path_string(['nfl_stadiums', 'custom_libs', 
-                                                                       'wiki_section_names.json']))
-        self._current_stadiums_wiki_section_name = wiki_cal['currentStadiumsTitle'].replace(" ", "_").capitalize()
-        self._current_stadiums_table_from_heading = wiki_cal['currentStadiumsNumFromHeading']
-        self._additional_stadiums_wiki_section_name = wiki_cal['additionalStadiumsTitle'].replace(" ", "_").capitalize()
-        self._additional_stadiums_table_from_heading = wiki_cal['additionalStadiumsNumFromHeading']
+        self._current_stadiums_wiki_section_name = scrape_cal['currentStadiumsTitle'].replace(" ", "_").capitalize()
+        self._current_stadiums_table_from_heading = scrape_cal['currentStadiumsNumFromHeading']
+        self._additional_stadiums_wiki_section_name = scrape_cal['additionalStadiumsTitle'].replace(" ", "_").capitalize()
+        self._additional_stadiums_table_from_heading = scrape_cal['additionalStadiumsNumFromHeading']
 
 
         # Used for team lookups
