@@ -2,8 +2,8 @@ from lukhed_basic_utils import requestsCommon as rC
 from lukhed_basic_utils import osCommon as osC
 from lukhed_basic_utils import fileCommon as fC
 from lukhed_basic_utils import timeCommon as tC
-from custom_libs.teamLists import city_short, alt_city_short, long, mascots, mascots_short
-from custom_libs.wikipediaCal import scrape_cal
+from nfl_stadiums.custom_libs.teamLists import city_short, alt_city_short, long, mascots, mascots_short
+from nfl_stadiums.custom_libs.wikipediaCal import scrape_cal
 import urllib.parse
 import math
 
@@ -547,18 +547,3 @@ class NFLStadiums:
             print(f"Error: Unable to get weather data. Status code: {response.status_code}")
             return None
 
-
-def main():
-    # Sanity Check Code
-    nfl_stadiums = NFLStadiums(use_cache=True)
-    special_stadium = nfl_stadiums.get_stadium_by_name("Allianz Arena")
-    print(f'\nSpechial Stadium Test:{special_stadium}\n')
-
-    today = tC.create_timestamp("%Y-%m-%d")
-    pit_weather = nfl_stadiums.get_weather_forecast_for_stadium('pit', today,
-                                                                hour_start=13, hour_end=16)
-    print(f'\nWeather Test:{pit_weather}\n')
-    
-
-if __name__ == '__main__':
-    main()

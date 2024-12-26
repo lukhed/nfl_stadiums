@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="nfl_stadiums",
-    version="1.1.0",
+    version="1.3.0",
     description="A simple python package that provides easy access to NFL stadium data",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
@@ -10,6 +10,7 @@ setup(
     author_email="lukhed.mail@gmail.com",
     url="https://github.com/lukhed/nfl_stadiums",
     packages=find_packages(),
+    include_package_data=True,
     python_requires=">=3.9",
     classifiers=[
         "Programming Language :: Python :: 3",
