@@ -39,9 +39,7 @@ class NFLStadiums:
 
         # Used to find stadium table from HTML. Change wiki_section_names.json if this changes.
         self._current_stadiums_wiki_section_name = scrape_cal['currentStadiumsTitle'].replace(" ", "_").capitalize()
-        self._current_stadiums_table_from_heading = scrape_cal['currentStadiumsNumFromHeading']
         self._additional_stadiums_wiki_section_name = scrape_cal['additionalStadiumsTitle'].replace(" ", "_").capitalize()
-        self._additional_stadiums_table_from_heading = scrape_cal['additionalStadiumsNumFromHeading']
 
 
         # Used for team lookups
@@ -81,21 +79,30 @@ class NFLStadiums:
             self.data = parsed_soup
 
     @staticmethod
-    def _find_table_under_heading(heading_ele, table_num_from_heading):
+    def _find_table_under_heading(heading_ele, table_type):
         # find table under heading
         next_ele = heading_ele.next_element
-        table_count = 1
-        table_element = None
-        while next_ele and table_count <= table_num_from_heading:
+        infinite_protect = 100
+        infinte_count = 0
+        while next_ele:
             next_ele = next_ele.next_element
-            if next_ele.name == 'table':
-                if table_count == table_num_from_heading:
-                    table_element = next_ele
-                    break
-                else:
-                    table_count = table_count + 1
+            infinte_count = infinte_count + 1
+            if infinte_count > infinite_protect:
+                print("ERROR: Fatal error while trying to parse the HTML from wikipeida. Raise a bug here:\n"
+                      "https://github.com/lukhed/nfl_stadiums/issues")
+                break
 
-        return table_element
+            if next_ele.name == 'table':
+                if type(next_ele.text) is not str:
+                    pass
+                else:
+                    # check if correct table by checking text
+                    check = next_ele.text.lower()
+                    if table_type == 'current' and 'lions' in check and 'steelers' in check:
+                        return next_ele
+                    elif (table_type == 'additional') and ('canton' in check or 'mexico' in check or 'germany' in check):
+                        return next_ele
+                    
 
     @staticmethod
     def _get_table_rows(table_element):
@@ -155,7 +162,11 @@ class NFLStadiums:
             self._stadium_metadata[title]['url'] = f"https://en.wikipedia.org{temp_url}"
             self._stadium_metadata[title]['index'] = index_count
             self._stadium_metadata[title]['hasRedirect'] = has_redirect
-            img_url = f"https://en.wikipedia.org{cells[img_index].find_all('a')[0].attrs['href']}"
+            try:
+                img_url = f"https://en.wikipedia.org{cells[img_index].find_all('a')[0].attrs['href']}"
+            except:
+                img_url = None
+
             capacity = self._clean_wiki_text(cells[capacity_index].text.replace(",", ""))
             city = self._clean_wiki_text(cells[city_index].text)
             surface = self._clean_wiki_text(cells[surface_index].text)
@@ -209,7 +220,7 @@ class NFLStadiums:
             print("ERROR: Could not get wikipedia current stadium data. The sections may have been updated.")
             return None
 
-        table_element = self._find_table_under_heading(heading, self._current_stadiums_table_from_heading)
+        table_element = self._find_table_under_heading(heading, 'current')
 
         if not table_element:
             print("ERROR: Could not get wikipedia table data. Could not find current stadium table.")
@@ -227,7 +238,7 @@ class NFLStadiums:
             print("ERROR: Could not get wikipedia additional stadium data. The sections may have been updated.")
             return None
 
-        table_element = self._find_table_under_heading(heading, self._additional_stadiums_table_from_heading)
+        table_element = self._find_table_under_heading(heading, 'additional')
 
         if not table_element:
             print("ERROR: Could not get wikipedia table data. Could not find additional stadium table.")
