@@ -172,3 +172,5 @@ cython_debug/
 
 # Other testing
 nfl_stadium_resources/
+
+quickTest.py
