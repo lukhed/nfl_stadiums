@@ -27,7 +27,7 @@ class NFLStadiums:
         self.verbose = verbose
 
         # API Info
-        self._header = {'User-Agent': 'NFLTeamStadiums/0.1 (https://github.com/grindSunday/NFLTeamStadiums)'}
+        self._header = {'User-Agent': 'NFLTeamStadiums/0.1 (https://github.com/lukhed/nfl_stadiums)'}
         self._main_url = "https://en.wikipedia.org/w/api.php"
 
         # Project Structure
