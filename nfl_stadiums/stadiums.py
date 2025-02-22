@@ -3,7 +3,6 @@ from lukhed_basic_utils import osCommon as osC
 from lukhed_basic_utils import fileCommon as fC
 from lukhed_basic_utils import timeCommon as tC
 from nfl_stadiums.custom_libs.teamLists import city_short, alt_city_short, long, mascots, mascots_short
-from nfl_stadiums.custom_libs.wikipediaCal import scrape_cal
 import urllib.parse
 import math
 
@@ -33,14 +32,18 @@ class NFLStadiums:
         # Project Structure
         self._resources_dir = osC.create_file_path_string(["nfl_stadium_resources"])
         self._raw_soup = None
-        self._raw_soup_file = osC.append_to_dir(self._resources_dir, "rawSoup.txt")
+
+        self._current_stadium_section_indice = None     #wikipedia section indice (to be found)
+        self._current_stadium_soup = None
+        self._current_stadium_file = osC.append_to_dir(self._resources_dir, "currentStadiumSoup.txt")
+
+        self._other_stadium_section_indice = None       #wikipedia section indice (to be found)
+        self._other_stadium_soup = None
+        self._other_stadium_file = osC.append_to_dir(self._resources_dir, "otherStadiumSoup.txt")
+
         self._parsed_soup_file = osC.append_to_dir(self._resources_dir, "parsedSoup.json")
+
         self._check_create_project_structure()
-
-        # Used to find stadium table from HTML. Change wiki_section_names.json if this changes.
-        self._current_stadiums_wiki_section_name = scrape_cal['currentStadiumsTitle'].replace(" ", "_").capitalize()
-        self._additional_stadiums_wiki_section_name = scrape_cal['additionalStadiumsTitle'].replace(" ", "_").capitalize()
-
 
         # Used for team lookups
         self._teams_city_short = [x.lower() for x in city_short]
@@ -56,8 +59,11 @@ class NFLStadiums:
             self._check_cache()
 
         if not self.data:
+            self._get_section_indices()
             self._get_current_stadium_data()
-            self._get_other_stadium_data()
+            if self._other_stadium_section_indice:
+                self._get_other_stadium_data()
+
             self._add_normalized_current_team_to_data()
             self._add_stadium_coordinates_to_data()
             fC.dump_json_to_file(self._parsed_soup_file, self.data)
@@ -68,41 +74,16 @@ class NFLStadiums:
 
     def _check_cache(self):
 
-        raw_soup = fC.read_file_content(self._raw_soup_file)
+        self._current_stadium_soup = fC.read_file_content(self._current_stadium_file)
+        self._other_stadium_soup = fC.read_file_content(self._other_stadium_file)
         parsed_soup = fC.load_json_from_file(self._parsed_soup_file)
 
-        if raw_soup == "" or parsed_soup == {}:
+        if parsed_soup == "" or parsed_soup == {}:
             self._check_print("INFO: No cache available. If this is first run this is normal.")
         else:
             self._check_print("INFO: Loaded data from cache. If the data needs to be refreshed, start the class with "
                               "parameter use_cache = False")
             self.data = parsed_soup
-
-    @staticmethod
-    def _find_table_under_heading(heading_ele, table_type):
-        # find table under heading
-        next_ele = heading_ele.next_element
-        infinite_protect = 100
-        infinte_count = 0
-        while next_ele:
-            next_ele = next_ele.next_element
-            infinte_count = infinte_count + 1
-            if infinte_count > infinite_protect:
-                print("ERROR: Fatal error while trying to parse the HTML from wikipeida. Raise a bug here:\n"
-                      "https://github.com/lukhed/nfl_stadiums/issues")
-                break
-
-            if next_ele.name == 'table':
-                if type(next_ele.text) is not str:
-                    pass
-                else:
-                    # check if correct table by checking text
-                    check = next_ele.text.lower()
-                    if table_type == 'current' and 'lions' in check and 'steelers' in check:
-                        return next_ele
-                    elif (table_type == 'additional') and ('canton' in check or 'mexico' in check or 'germany' in check):
-                        return next_ele
-                    
 
     @staticmethod
     def _get_table_rows(table_element):
@@ -192,17 +173,49 @@ class NFLStadiums:
             self.data.append(temp_dict.copy())
             index_count = index_count + 1
 
-    def _get_current_stadium_data(self):
+    def _get_section_indices(self):
+        # Get the relevant section indices for current stadiums and other stadiums
+
         # Parameters for the API request
         params = {
             "action": "parse",
             "page": "List of current NFL stadiums",
             "format": "json",
-            "prop": "text"
+            "prop": "sections"
         }
 
-        # Make the API request
+        # Make the API request to view page sections
         self._check_print("INFO: Retrieving base stadium data from wikipedia")
+
+        response = rC.make_request(self._main_url, params=params, headers=self._header)
+        data = response.json()
+
+        for section in data['parse']['sections']:
+            section_line = section['line'].lower()
+            if 'list' in section_line and 'current' in section_line and 'stadiums' in section_line:
+                self._current_stadium_section_indice = section["index"]
+            if 'special' in section_line and 'stadiums' in section_line:
+                self._other_stadium_section_indice = section["index"]
+
+        if self._current_stadium_section_indice is None:
+            print("ERROR: Couldn't find current stadium section at wikipedia page. Please make an issue below:\n"
+                    "https://github.com/lukhed/nfl_stadiums/issues")
+            quit()
+
+        if self._other_stadium_section_indice is None:
+            print("ERROR: Couldn't find special event stadium section at wikipedia page. Please make an issue below:\n"
+                    "https://github.com/lukhed/nfl_stadiums/issues")
+
+    def _get_current_stadium_data(self):
+        # Make api request to get the section data
+        params = {
+            "action": "parse",
+            "page": "List of current NFL stadiums",
+            "format": "json",
+            "prop": "text",
+            "section": self._current_stadium_section_indice
+        }
+
         response = rC.make_request(self._main_url, params=params, headers=self._header)
         data = response.json()
 
@@ -210,43 +223,50 @@ class NFLStadiums:
         html_content = data['parse']['text']['*']
 
         # Parse the HTML content with BeautifulSoup
-        self._raw_soup = rC.get_soup_from_html_content(html_content)
-        fC.write_content_to_file(self._raw_soup_file, str(self._raw_soup))
+        self._current_stadium_soup = rC.get_soup_from_html_content(html_content)
+        fC.write_content_to_file(self._current_stadium_file, str(self._current_stadium_soup))
 
-        # find heading above table
-        heading = self._raw_soup.find(id=self._current_stadiums_wiki_section_name)
+        table_element = self._current_stadium_soup.select_one("table.wikitable.sortable")
 
-        if not heading:
-            print("ERROR: Could not get wikipedia current stadium data. The sections may have been updated.")
-            return None
-
-        table_element = self._find_table_under_heading(heading, 'current')
 
         if not table_element:
-            print("ERROR: Could not get wikipedia table data. Could not find current stadium table.")
-            return None
+            print("ERROR: Couldn't find current stadium table at the wikipedia page. Please make an issue below:\n"
+                  "https://github.com/lukhed/nfl_stadiums/issues")
+            quit()
 
         table_rows = self._get_table_rows(table_element)
         self._parse_table_add_to_data(table_rows)
 
     def _get_other_stadium_data(self):
-        if self._raw_soup is None:
-            self._raw_soup = rC.get_soup_from_html_content(fC.read_file_content(self._raw_soup_file))
+        # Make api request to get the section data
+        params = {
+            "action": "parse",
+            "page": "List of current NFL stadiums",
+            "format": "json",
+            "prop": "text",
+            "section": self._other_stadium_section_indice
+        }
 
-        heading = self._raw_soup.find(id=self._additional_stadiums_wiki_section_name)
-        if not heading:
-            print("ERROR: Could not get wikipedia additional stadium data. The sections may have been updated.")
-            return None
+        response = rC.make_request(self._main_url, params=params, headers=self._header)
+        data = response.json()
 
-        table_element = self._find_table_under_heading(heading, 'additional')
+        # Extract the HTML content
+        html_content = data['parse']['text']['*']
+
+        # Parse the HTML content with BeautifulSoup
+        self._other_stadium_soup = rC.get_soup_from_html_content(html_content)
+        fC.write_content_to_file(self._other_stadium_file, str(self._other_stadium_soup))
+
+        table_element = self._other_stadium_soup.select_one("table.wikitable.sortable")
 
         if not table_element:
-            print("ERROR: Could not get wikipedia table data. Could not find additional stadium table.")
+            print("ERROR: Couldn't find special event stadium table at wikipedia page. Please make an issue below:\n"
+                  "https://github.com/lukhed/nfl_stadiums/issues")
             return None
 
         table_rows = self._get_table_rows(table_element)
         self._parse_table_add_to_data(table_rows)
-
+    
     def _add_normalized_current_team_to_data(self):
         """
         This function adds the 'sharedStadium' and 'currentTeams' data
@@ -343,8 +363,10 @@ class NFLStadiums:
 
     def _check_create_project_structure(self):
         osC.check_create_dir_structure(self._resources_dir, full_path=True)
-        if not osC.check_if_file_exists(self._raw_soup_file):
-            fC.create_blank_file(self._raw_soup_file)
+        if not osC.check_if_file_exists(self._current_stadium_file):
+            fC.create_blank_file(self._current_stadium_file)
+        if not osC.check_if_file_exists(self._other_stadium_file):
+            fC.create_blank_file(self._other_stadium_file)
         if not osC.check_if_file_exists(self._parsed_soup_file):
             fC.dump_json_to_file(self._parsed_soup_file, {})
 
