@@ -111,11 +111,11 @@ forecast = stad.get_weather_forecast_for_stadium("rams", "2025/02/24", hour_star
 ```
 
 ## Data and Usage
-YOU ARE RESPONSIBLE FOR HOW YOU ACCESS AND USE THE DATA. This package utilizes the Wikipedia API to retrieve NFL 
-stadium data and Open-Meteo.com for weather information. Stadium data is fairly static, so by default, this class 
-will save the data retrieved from Wikipedia locally for subsequent uses for quicker access and less load on Wikipedia. 
+This package utilizes the Wikipedia API to retrieve NFL stadium data and Open-Meteo.com for weather information.
 
 ### You are Responsible for How You Access and Use The Data
+Stadium data is fairly static, so by default, this class will save the data retrieved from Wikipedia locally for 
+subsequent uses for quicker access and less load on Wikipedia. 
 
 ### Wikipedia Data
 The core page is [here](https://en.wikipedia.org/wiki/List_of_current_NFL_stadiums). Wikipedia content is licensed 
