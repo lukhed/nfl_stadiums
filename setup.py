@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="nfl_stadiums",
-    version="2.0.2",
+    version="2.0.3",
     description="A simple python package that provides easy access to NFL stadium data",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
