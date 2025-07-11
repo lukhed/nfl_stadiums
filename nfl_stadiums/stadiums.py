@@ -192,7 +192,8 @@ class NFLStadiums:
 
         for section in data['parse']['sections']:
             section_line = section['line'].lower()
-            if 'list' in section_line and 'current' in section_line and 'stadiums' in section_line:
+            section_line = section_line.replace("_", "")
+            if 'current' in section_line and 'stadiums' in section_line and 'map' not in section_line:
                 self._current_stadium_section_indice = section["index"]
             if 'special' in section_line and 'stadiums' in section_line:
                 self._other_stadium_section_indice = section["index"]
