@@ -33,10 +33,12 @@ class NFLStadiums:
         self._resources_dir = osC.create_file_path_string(["nfl_stadium_resources"])
         self._raw_soup = None
 
+        self._potential_stadium_list_indices = []
         self._current_stadium_section_indice = None     #wikipedia section indice (to be found)
         self._current_stadium_soup = None
         self._current_stadium_file = osC.append_to_dir(self._resources_dir, "currentStadiumSoup.txt")
 
+        self._potential_other_section_indices = []
         self._other_stadium_section_indice = None       #wikipedia section indice (to be found)
         self._other_stadium_soup = None
         self._other_stadium_file = osC.append_to_dir(self._resources_dir, "otherStadiumSoup.txt")
@@ -61,7 +63,7 @@ class NFLStadiums:
         if not self.data:
             self._get_section_indices()
             self._get_current_stadium_data()
-            if self._other_stadium_section_indice:
+            if self._potential_other_section_indices:
                 self._get_other_stadium_data()
 
             self._add_normalized_current_team_to_data()
@@ -100,13 +102,21 @@ class NFLStadiums:
         capacity_index = columns.index('Capacity')
         city_index = columns.index('Location')
         surface_index = columns.index('Surface')
-        roof_index = columns.index('Roof type')
+        
+        try:
+            roof_index = columns.index('Roof type')
+        except ValueError:
+            roof_index = columns.index('Roof')
+
         try:
             teams_or_events = columns.index('Team(s)')
             is_teams = True
         except ValueError:
-            teams_or_events = columns.index('Event(s)')
-            is_teams = False
+            try:
+                teams_or_events = columns.index('Event(s)')
+            except ValueError:
+                teams_or_events = "N/A"
+                is_teams = False
 
         date_opened_index = columns.index('Opened')
 
@@ -119,6 +129,50 @@ class NFLStadiums:
         ref_bracket_loc = text_to_extract_from.find('[')
         return text_to_extract_from[:ref_bracket_loc] if ref_bracket_loc > -1 else text_to_extract_from
 
+    def _narrow_down_stadium_section_indices(self, current_or_other):
+        """
+        There are multiple sections that could contain the data we are looking for. Call the wiki api
+        for each section and check the data if it is staddium data.
+        """
+        if current_or_other == 'current':
+            section_indices = self._potential_stadium_list_indices
+        else:
+            section_indices = self._potential_other_section_indices
+
+        for index in section_indices:
+            params = {
+                "action": "parse",
+                "page": "List of current NFL stadiums",
+                "format": "json",
+                "prop": "text",
+                "section": index
+            }
+
+            response = rC.make_request(self._main_url, params=params, headers=self._header)
+            data = response.json()
+
+            # Extract the HTML content
+            html_content = data['parse']['text']['*']
+
+            # Parse the HTML content with BeautifulSoup
+            section_soup = rC.get_soup_from_html_content(html_content)
+
+            table_element = section_soup.select_one("table.wikitable.sortable")
+
+            if table_element:
+                test_rows = self._get_table_rows(table_element)
+                try:
+                    test = self._get_table_column_indices(test_rows)
+                    if current_or_other == 'current':
+                        self._current_stadium_section_indice = index
+                    else:
+                        self._other_stadium_section_indice = index
+                    break
+                except Exception as e:
+                    continue
+
+            tC.sleep(0.5)
+    
     def _parse_table_add_to_data(self, table_rows):
         (name_index, img_index, capacity_index, city_index, surface_index, roof_index, teams_or_events,
          date_opened_index, is_teams) = self._get_table_column_indices(table_rows)
@@ -193,21 +247,26 @@ class NFLStadiums:
         for section in data['parse']['sections']:
             section_line = section['line'].lower()
             section_line = section_line.replace("_", "")
-            if 'current' in section_line and 'stadiums' in section_line and 'map' not in section_line:
-                self._current_stadium_section_indice = section["index"]
-            if 'special' in section_line and 'stadiums' in section_line:
-                self._other_stadium_section_indice = section["index"]
+            if 'list' in section_line:
+                self._potential_stadium_list_indices.append(section["index"])
+            if 'special' in section_line:
+                self._potential_other_section_indices.append(section["index"])
 
-        if self._current_stadium_section_indice is None:
+        if not self._potential_stadium_list_indices:
             print("ERROR: Couldn't find current stadium section at wikipedia page. Please make an issue below:\n"
                     "https://github.com/lukhed/nfl_stadiums/issues")
             quit()
 
-        if self._other_stadium_section_indice is None:
+        if not self._potential_other_section_indices:
             print("ERROR: Couldn't find special event stadium section at wikipedia page. Please make an issue below:\n"
                     "https://github.com/lukhed/nfl_stadiums/issues")
 
     def _get_current_stadium_data(self):
+        if len(self._potential_stadium_list_indices) > 1:
+            self._narrow_down_stadium_section_indices('current')
+        else:
+            self._current_stadium_section_indice = self._potential_stadium_list_indices[0]
+
         # Make api request to get the section data
         params = {
             "action": "parse",
@@ -239,6 +298,11 @@ class NFLStadiums:
         self._parse_table_add_to_data(table_rows)
 
     def _get_other_stadium_data(self):
+        if len(self._potential_other_section_indices) > 1:
+            self._narrow_down_stadium_section_indices("other")
+        else:
+            self._other_stadium_section_indice = self._potential_other_section_indices[0]
+
         # Make api request to get the section data
         params = {
             "action": "parse",
