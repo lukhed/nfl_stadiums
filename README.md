@@ -1,47 +1,121 @@
-# NFLTeamStadiums
-A simple python package that provides easy access to NFL stadium data such as capacity, location, and weather.
+# NFL Team Stadiums
+
+[![PyPI version](https://badge.fury.io/py/nfl-stadiums.svg)](https://badge.fury.io/py/nfl-stadiums)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.6+](https://img.shields.io/badge/python-3.6+-blue.svg)](https://www.python.org/downloads/)
+
+A simple Python package that provides easy access to NFL stadium data including capacity, location, weather forecasts, 
+and more.
+
+## Table of Contents
+
+- [Features](#features)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Usage Examples](#usage-examples)
+- [Data Examples](#data-examples)
+- [Requirements](#requirements)
+- [Data Sources](#data-sources)
+- [Contributing](#contributing)
+- [License](#license)
+
+## Features
+
+- ✅ **Complete NFL Stadium Data**: Get detailed information for all current NFL stadiums
+- 🌍 **Coordinates & Location**: Access precise latitude/longitude coordinates for each stadium
+- 🌤️ **Weather Forecasts**: Retrieve weather data for game days and events
+- 📏 **Distance Calculations**: Calculate distances between stadiums
+- 🏟️ **Stadium Search**: Find stadiums by team name or stadium name
 
 ## Installation
-```
+```bash
 pip install nfl-stadiums
 ```
 
-## Instantiation
+## Quick Start
+
 ```python
 from nfl_stadiums import NFLStadiums
 
-# Use cache if available by default
+# Initialize with default settings (uses cache)
+stadiums = NFLStadiums()
+
+# Get all stadium names
+stadium_list = stadiums.get_list_of_stadium_names()
+
+# Get data for a specific team
+lions_data = stadiums.get_stadium_by_team("lions")
+
+# Get weather forecast for a game
+weather = stadiums.get_weather_forecast_for_stadium('lions', '2024-12-15')
+```
+
+## Usage Examples
+
+### Basic Stadium Operations
+
+```python
+from nfl_stadiums import NFLStadiums
+
+# Initialize the client
 stad = NFLStadiums()
 
-# Force new retrieval
-stad = NFLStadiums(use_cache=False)
-
-# Don't print
-stad = NFLStadiums(verbose=False)
-```
-
-## Example Usage
-```python
+# Get a list of all stadium names
 stadiums = stad.get_list_of_stadium_names()
 
+# Get stadium data by team name
 lions_stadium_data = stad.get_stadium_by_team("lions")
 
+# Get stadium data by stadium name
 stadium_data = stad.get_stadium_by_name("ford field")
-
-coords = stad.get_stadium_coordinates_by_team("lions")
-
-coords = stad.get_stadium_coordinates_by_name("ford field")
-
-miles = stad.calculate_distance_between_stadiums("lions", "rams")
-
-forecast = stad.get_weather_forecast_for_stadium('lions', '2024-05-30')
-
-# Change parameters
-forecast = stad.get_weather_forecast_for_stadium("rams", "2025/02/24", hour_start=9, hour_end=15, day_format="%Y/%m/%d")
 ```
 
+### Coordinates and Distance
 
-### Stadium Data Example
+```python
+# Get coordinates for a stadium
+coords = stad.get_stadium_coordinates_by_team("lions")
+coords = stad.get_stadium_coordinates_by_name("ford field")
+
+# Calculate distance between two stadiums
+miles = stad.calculate_distance_between_stadiums("lions", "rams")
+```
+
+### Weather Forecasting
+
+```python
+# Get weather forecast for a specific date
+forecast = stad.get_weather_forecast_for_stadium('lions', '2024-05-30')
+
+# Customize forecast parameters
+forecast = stad.get_weather_forecast_for_stadium(
+    "rams", 
+    "2025/02/24", 
+    hour_start=9, 
+    hour_end=15, 
+    day_format="%Y/%m/%d"
+)
+```
+
+### Configuration Options
+
+```python
+# Force fresh data retrieval (bypass cache)
+stad = NFLStadiums(use_cache=False)
+
+# Disable verbose output
+stad = NFLStadiums(verbose=False)
+
+# Combine options
+stad = NFLStadiums(use_cache=False, verbose=False)
+```
+
+## Data Examples
+
+### Stadium Data Structure
+
+Each stadium object contains the following information:
+
 ```json
 {
     "name": "Ford Field",
@@ -67,8 +141,11 @@ forecast = stad.get_weather_forecast_for_stadium("rams", "2025/02/24", hour_star
 }
 ```
 
-### Weather Data Example
-```
+### Weather Data Structure
+
+Weather forecast data includes comprehensive meteorological information:
+
+```json
 {
     "latitude": 42.351395, 
     "longitude": -83.06134, 
@@ -110,21 +187,62 @@ forecast = stad.get_weather_forecast_for_stadium("rams", "2025/02/24", hour_star
 }
 ```
 
-## Data and Usage
-This package utilizes the Wikipedia API to retrieve NFL stadium data and Open-Meteo.com for weather information.
+## Requirements
 
-### You are Responsible for How You Access and Use The Data
-Stadium data is fairly static, so by default, this class will save the data retrieved from Wikipedia locally for 
-subsequent uses for quicker access and less load on Wikipedia. 
+- Python 3.6 or higher
+- Internet connection for data retrieval
+- Dependencies are automatically installed with the package
+
+## Data Sources
+
+This package utilizes reliable, up-to-date data sources to provide accurate information:
+
+### Caching and Data Responsibility
+
+Stadium data is relatively static, so by default, this package saves data retrieved from Wikipedia locally for 
+subsequent uses. This provides:
+- **Faster access** on repeated requests
+- **Reduced load** on Wikipedia servers
+- **Offline capability** once data is cached
+
+You are responsible for how you access and use the data in accordance with the terms of service of the underlying APIs.
 
 ### Wikipedia Data
-The core page is [here](https://en.wikipedia.org/wiki/List_of_current_NFL_stadiums). Wikipedia content is licensed 
-under the Creative Commons Attribution-ShareAlike 3.0 Unported License. For more details on the terms of use, 
-please refer to the [Wikimedia Foundation's Terms of Use](https://foundation.wikimedia.org/wiki/Policy:Terms_of_Use).
 
-### Open Meteo
-This package utilizes the Open_Meteo.com API found [here](https://open-meteo.com/). See their terms of 
-use [here](https://open-meteo.com/en/terms).
+Stadium information is sourced from the 
+[List of current NFL stadiums](https://en.wikipedia.org/wiki/List_of_current_NFL_stadiums) Wikipedia page. 
+
+**License**: Wikipedia content is licensed under the 
+[Creative Commons Attribution-ShareAlike 3.0 Unported License](https://creativecommons.org/licenses/by-sa/3.0/). 
+For complete terms of use, see the 
+[Wikimedia Foundation's Terms of Use](https://foundation.wikimedia.org/wiki/Policy:Terms_of_Use).
+
+### Weather Data (Open-Meteo)
+
+Weather forecasting is powered by the [Open-Meteo API](https://open-meteo.com/), which provides:
+- High-quality weather data
+- Global coverage
+- Free access for non-commercial use
+
+**Terms**: Please review [Open-Meteo's Terms of Service](https://open-meteo.com/en/terms) for usage guidelines.
+
+## Contributing
+
+Contributions are welcome! Here's how you can help:
+
+1. **Fork the repository**
+2. **Create a feature branch**: `git checkout -b feature/amazing-feature`
+3. **Make your changes** and add tests if applicable
+4. **Commit your changes**: `git commit -m 'Add amazing feature'`
+5. **Push to the branch**: `git push origin feature/amazing-feature`
+6. **Open a Pull Request**
+
+### Issues and Bug Reports
+
+If you encounter any issues or have suggestions for improvements:
+- Check existing [GitHub Issues](https://github.com/lukhed/nfl_stadiums/issues)
+- Create a new issue with detailed information about the problem
+- Include code examples and error messages when applicable
 
 ## License
 This project is licensed under the MIT License. See the LICENSE file for details.
