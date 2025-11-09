@@ -4,7 +4,7 @@ setup(
     name="nfl_stadiums",
     version="2.0.4",
     description="A simple python package that provides easy access to NFL stadium data",
-    long_description=open("README.md").read(),
+    long_description=open("README.md", encoding="utf-8").read(),
     long_description_content_type="text/markdown",
     author="lukhed",
     author_email="lukhed.mail@gmail.com",
